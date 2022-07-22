@@ -1,0 +1,56 @@
+version: '3'
+services:
+  node:
+    depends_on:
+      - mongodb
+    build:
+      context: .
+      dockerfile: .docker/node/Dockerfile
+    #volumes:
+      #- ./:/app
+    image: ${TAG_RUNNING:-my-music-app-node}
+    container_name: my-music-app-node
+    restart: always
+    ports:
+      - ${EXTERNAL_PORT2:-8000}:80
+    networks:
+      - music-app
+  
+  client:
+    depends_on:
+      - node
+      - mongodb
+    build:
+      context: .
+      dockerfile: .docker/client/Dockerfile
+    #volumes:
+      #- ./:/app
+    image: ${TAG_RUNNING_CLIENT:-my-music-app-client}
+    container_name: my-music-app-client
+    restart: always
+    ports:
+      - ${EXTERNAL_PORT_CLIENT:-8082}:80
+    networks:
+      - music-app
+
+  mongodb:
+    image: mongo:latest
+    container_name: my-music-app-mongodb
+    restart: always
+    environment:
+      - MONGO_INITDB_DATABASE=music-db-back
+      - MONGO_INITDB_USERNAME=admin
+      - MONGO_INITDB_PASSWORD=
+    volumes:
+      - ./database/index.js:/docker-entrypoint-initdb.d/database/index.js:ro
+      - data:/data/db
+    ports:
+      - '27017:27017'
+    networks:
+      - music-app
+networks:
+  music-app:
+    driver: bridge
+
+volumes:
+  data:
